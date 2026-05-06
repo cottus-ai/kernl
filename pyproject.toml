@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "kernl"
-version = "0.1.0"
+version = "0.1.1"
 description = "Compile Python AI agents to unikernels, deploy on Firecracker microVMs"
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -21,7 +21,7 @@ classifiers = [
 
 [project.urls]
 Homepage = "https://unikernel.ai"
-Repository = "https://github.com/unikernel-ai/kernl"
+Repository = "https://github.com/cottus-ai/kernl"
 
 [project.scripts]
 kernl = "kernl.cli:main"

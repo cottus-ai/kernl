@@ -127,7 +127,10 @@ class TestRunErrors:
         r = run(broken_krn, {"x": "go"}, dry_run=True)
         assert r["status"] == "complete"
         if r["tool_calls"]:
-            assert "error" in r["tool_calls"][0]["result"].lower() or "intentional" in r["tool_calls"][0]["result"].lower()
+            assert (
+                "error" in r["tool_calls"][0]["result"].lower()
+                or "intentional" in r["tool_calls"][0]["result"].lower()
+            )
 
     def test_timeout_returns_timeout_or_error(self, tmp_path: Path) -> None:
         src = """\
@@ -155,6 +158,7 @@ class TestRunProcess:
         staging.mkdir()
         extract_to(bench_krn, staging)
         from kernl.run import _run_proc
+
         r = _run_proc(staging, {"input_data": "hello"}, dry_run=True, timeout=30)
         assert r["status"] == "complete"
 
@@ -163,6 +167,7 @@ class TestRunProcess:
         staging.mkdir()
         extract_to(bench_krn, staging)
         from kernl.run import _run_proc
+
         r = _run_proc(staging, {"input_data": "hello"}, dry_run=True, timeout=30)
         assert r["status"] == "complete"
 

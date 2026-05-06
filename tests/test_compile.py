@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from kernl.agent import parse
+from kernl.agent import AgentManifest, parse
 from kernl.bundle import inspect, pack, unpack
 from kernl.compile import compile
 
@@ -255,3 +255,103 @@ class TestCompile:
         assert img.path.exists()
         info = inspect(img.path)
         assert info["framework"] == "llamaindex"
+
+
+NO_DOC_TOOL_AGENT = """\
+from kernl import agent, tool
+
+@agent(name="nd", model="claude-sonnet-4-20250514", max_steps=2)
+class A:
+    q: str
+
+    @tool
+    def ping(self, x: str) -> str:
+        return x
+"""
+
+OPTIONAL_STATE_AGENT = """\
+from typing import Optional
+from kernl import agent, tool
+
+@agent(name="opt", model="claude-sonnet-4-20250514", max_steps=2)
+class A:
+    q: Optional[str]
+
+    @tool
+    def t(self, x: str) -> str:
+        return x
+"""
+
+DEFAULT_PARAM_AGENT = """\
+from kernl import agent, tool
+
+@agent(name="defp", model="claude-sonnet-4-20250514", max_steps=2)
+class A:
+    q: str
+
+    @tool
+    def t(self, a: str, b: str = "0") -> str:
+        \"\"\"doc.\"\"\"
+        return a + b
+"""
+
+MULTI_AGENT_SOURCE = """\
+from kernl import agent, tool
+
+@agent(name="first", model="claude-sonnet-4-20250514", max_steps=2)
+class First:
+    q: str
+
+    @tool
+    def a_tool(self) -> str:
+        return "a"
+
+@agent(name="second", model="claude-sonnet-4-20250514", max_steps=2)
+class Second:
+    q: str
+
+    @tool
+    def b_tool(self) -> str:
+        return "b"
+"""
+
+
+class TestParserEdgeCases:
+    def test_tool_without_docstring(self, tmp_path: Path) -> None:
+        p = tmp_path / "nd.py"
+        p.write_text(NO_DOC_TOOL_AGENT)
+        m = parse(p)
+        assert m.tools[0].description == ""
+
+    def test_optional_str_state_field(self, tmp_path: Path) -> None:
+        p = tmp_path / "opt.py"
+        p.write_text(OPTIONAL_STATE_AGENT)
+        m = parse(p)
+        assert m.state_fields.get("q") == "str"
+
+    def test_default_makes_param_optional(self, tmp_path: Path) -> None:
+        p = tmp_path / "defp.py"
+        p.write_text(DEFAULT_PARAM_AGENT)
+        m = parse(p)
+        t = m.tools[0]
+        assert "a" in t.required
+        assert "b" not in t.required
+
+    def test_first_agent_class_wins(self, tmp_path: Path) -> None:
+        p = tmp_path / "multi.py"
+        p.write_text(MULTI_AGENT_SOURCE)
+        m = parse(p)
+        assert m.name == "first"
+        assert m.tools[0].name == "a_tool"
+
+
+def test_conftest_sample_manifest_matches_parse(
+    sample_manifest: AgentManifest,
+    sample_agent_source: str,
+    tmp_path: Path,
+) -> None:
+    p = tmp_path / "again.py"
+    p.write_text(sample_agent_source)
+    m2 = parse(p)
+    assert sample_manifest.name == m2.name == "sample"
+    assert isinstance(sample_manifest, AgentManifest)
