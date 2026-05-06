@@ -1,6 +1,7 @@
 import json
 import shutil
 import subprocess
+import sys
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -28,8 +29,10 @@ def compile(agent_path: str | Path, output: str | Path | None = None) -> Image:
     if _ops_available():
         try:
             return _compile_unikernel(manifest, agent_src, out)
-        except Exception:
+        except (FileNotFoundError, OSError):
             pass
+        except Exception as e:
+            print(f"kernl: unikernel build skipped: {e}", file=sys.stderr)
 
     _, h = pack(manifest, agent_src, out)
     return Image(path=out, hash=h, image_type="portable", size=out.stat().st_size)
@@ -46,7 +49,16 @@ def _compile_unikernel(manifest: AgentManifest, agent_src: str, out: Path) -> Im
         (staging / "config.json").write_text(json.dumps(_ops_config(manifest)))
 
         result = subprocess.run(
-            ["ops", "build", "--config", "config.json", "--target", "firecracker", "-o", output_stem],
+            [
+                "ops",
+                "build",
+                "--config",
+                "config.json",
+                "--target",
+                "firecracker",
+                "-o",
+                output_stem,
+            ],
             cwd=staging,
             capture_output=True,
             text=True,
