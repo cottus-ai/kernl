@@ -132,10 +132,12 @@ class _FC:
                 pass
 
     def _put(self, path: str, body: dict) -> None:
+        sock_path = self.sock
+
         class _Unix(http.client.HTTPConnection):
-            def connect(self_) -> None:
-                self_.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-                self_.sock.connect(self.sock)
+            def connect(self) -> None:
+                self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                self.sock.connect(sock_path)
 
         c = _Unix("localhost")
         d = json.dumps(body).encode()
