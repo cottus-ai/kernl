@@ -1,3 +1,4 @@
+import hashlib
 import http.client
 import json
 import os
@@ -34,7 +35,11 @@ def run(
                 and _fc_available()
                 and (staging / "rootfs.img").exists()
             )
-            result = _run_fc(staging, input_data, dry_run, timeout) if use_fc else _run_proc(staging, input_data, dry_run, timeout)
+            result = (
+                _run_fc(staging, input_data, dry_run, timeout)
+                if use_fc
+                else _run_proc(staging, input_data, dry_run, timeout)
+            )
     except Exception as e:
         result = {"status": "error", "output": str(e), "steps": 0, "tool_calls": []}
 
@@ -49,7 +54,10 @@ def _run_proc(staging: Path, input_data: dict, dry_run: bool, timeout: int) -> d
 
     proc = subprocess.Popen(
         [sys.executable, str(staging / "runtime.py")],
-        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
     )
     try:
         out, err = proc.communicate(
@@ -64,7 +72,11 @@ def _run_proc(staging: Path, input_data: dict, dry_run: bool, timeout: int) -> d
         return {"status": "error", "output": err.decode()[:500], "steps": 0, "tool_calls": []}
 
     line = out.decode().strip()
-    return json.loads(line) if line else {"status": "error", "output": "no output", "steps": 0, "tool_calls": []}
+    return (
+        json.loads(line)
+        if line
+        else {"status": "error", "output": "no output", "steps": 0, "tool_calls": []}
+    )
 
 
 def _run_fc(staging: Path, input_data: dict, dry_run: bool, timeout: int) -> dict:
@@ -91,26 +103,56 @@ class _FC:
         if os.path.exists(self.sock):
             os.unlink(self.sock)
         self._p = subprocess.Popen(
-            ["firecracker", "--api-sock", self.sock, "--log-path", f"/tmp/fc-{self.vid}.log", "--level", "Error"],
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            [
+                "firecracker",
+                "--api-sock",
+                self.sock,
+                "--log-path",
+                f"/tmp/fc-{self.vid}.log",
+                "--level",
+                "Error",
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
         )
         _wait_sock(self.sock)
         for path, body in [
             ("/machine-config", {"vcpu_count": 1, "mem_size_mib": mem}),
-            ("/boot-source", {"kernel_image_path": kernel, "boot_args": "console=ttyS0 reboot=k panic=1 pci=off"}),
-            ("/drives/rootfs", {"drive_id": "rootfs", "path_on_host": rootfs, "is_root_device": True, "is_read_only": False}),
-            ("/network-interfaces/eth0", {"iface_id": "eth0", "host_dev_name": self.tap, "guest_mac": _mac(self.vid)}),
+            (
+                "/boot-source",
+                {
+                    "kernel_image_path": kernel,
+                    "boot_args": "console=ttyS0 reboot=k panic=1 pci=off",
+                },
+            ),
+            (
+                "/drives/rootfs",
+                {
+                    "drive_id": "rootfs",
+                    "path_on_host": rootfs,
+                    "is_root_device": True,
+                    "is_read_only": False,
+                },
+            ),
+            (
+                "/network-interfaces/eth0",
+                {"iface_id": "eth0", "host_dev_name": self.tap, "guest_mac": _mac(self.vid)},
+            ),
             ("/actions", {"action_type": "InstanceStart"}),
         ]:
             self._put(path, cast(dict[str, Any], body))
 
     def call(self, inp: dict, dry: bool, timeout: int) -> dict:
         data = json.dumps({"input": inp, "dry_run": dry}).encode()
+        headers = {"Content-Type": "application/json"}
+        tok = os.environ.get("KERNL_TOKEN")
+        if tok:
+            headers["Authorization"] = f"Bearer {tok}"
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
             try:
                 c = http.client.HTTPConnection(self.guest, 8080, timeout=3)
-                c.request("POST", "/run", body=data, headers={"Content-Type": "application/json"})
+                c.request("POST", "/run", body=data, headers=headers)
                 return json.loads(c.getresponse().read())
             except Exception:
                 time.sleep(0.05)
@@ -140,7 +182,12 @@ class _FC:
 
         c = _Unix("localhost")
         d = json.dumps(body).encode()
-        c.request("PUT", path, body=d, headers={"Content-Type": "application/json", "Content-Length": str(len(d))})
+        c.request(
+            "PUT",
+            path,
+            body=d,
+            headers={"Content-Type": "application/json", "Content-Length": str(len(d))},
+        )
         r = c.getresponse()
         if r.status >= 400:
             raise RuntimeError(f"FC API {path}: {r.status} {r.read().decode()}")
@@ -156,11 +203,11 @@ def _tap_up(name: str, host_ip: str) -> None:
         ["ip", "addr", "add", f"{host_ip}/30", "dev", name],
         ["ip", "link", "set", name, "up"],
     ):
-        subprocess.run(cmd, capture_output=True)
+        subprocess.run(cmd, capture_output=True, check=True)
 
 
 def _tap_down(name: str) -> None:
-    subprocess.run(["ip", "link", "del", name], capture_output=True)
+    subprocess.run(["ip", "link", "del", name], capture_output=True, check=False)
 
 
 def _wait_sock(path: str, t: float = 5.0) -> None:
@@ -173,5 +220,6 @@ def _wait_sock(path: str, t: float = 5.0) -> None:
 
 
 def _mac(vid: str) -> str:
-    h = hash(vid) & 0xFF_FFFF_FFFF
-    return "02:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}".format(*((h >> s) & 0xFF for s in (32, 24, 16, 8, 0)))
+    b = bytearray(hashlib.md5(vid.encode(), usedforsecurity=False).digest()[:6])
+    b[0] = (b[0] & 0xFE) | 0x02
+    return ":".join(f"{x:02x}" for x in b)

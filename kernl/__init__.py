@@ -16,6 +16,7 @@ def agent(**kwargs: Any) -> Callable[[type], type]:
     def _wrap(cls: type) -> type:
         cls._kernl = kwargs  # type: ignore[attr-defined]
         return cls
+
     return _wrap
 
 

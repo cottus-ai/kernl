@@ -7,7 +7,8 @@ from typing import NoReturn
 def main() -> None:
     argv = sys.argv[1:]
     if not argv or argv[0] in ("-h", "--help"):
-        return _help()
+        _help()
+        return
 
     cmd, rest = argv[0], argv[1:]
     fn = {
@@ -78,7 +79,9 @@ def _deploy(args: list[str]) -> None:
     pool = deploy(args[0], remote=remote, pool_size=size)
     h = pool.health()
     print(f"  deployed  {args[0]}")
-    print(f"  workers   {h['workers']['alive']}/{h['workers']['total']}  score={h['score']}  {h['status']}")
+    print(
+        f"  workers   {h['workers']['alive']}/{h['workers']['total']}  score={h['score']}  {h['status']}"
+    )
 
 
 def _inspect(args: list[str]) -> None:
@@ -104,14 +107,17 @@ def _exec(args: list[str]) -> None:
     from kernl.compile import compile
     from kernl.run import run
 
-    if len(args) < 2:
-        _die("usage: kernl exec <agent.py> '<json>' [--dry-run]")
+    if not args or args[0].startswith("-"):
+        _die("usage: kernl exec <agent.py> ['<json>'] [--dry-run]")
+
+    pos = [a for a in args[1:] if not a.startswith("-")]
+    inp = _parse_json(pos[0]) if pos else {}
 
     with tempfile.NamedTemporaryFile(suffix=".krn", delete=False) as f:
         tmp = f.name
     try:
         compile(args[0], tmp)
-        r = run(tmp, _parse_json(args[1]), dry_run="--dry-run" in args)
+        r = run(tmp, inp, dry_run="--dry-run" in args)
         print(f"  {r['status']}  {r.get('output', '')[:300]}  ({r.get('steps', 0)} steps)")
     finally:
         try:
@@ -127,14 +133,14 @@ def _parse_json(s: str) -> dict:
         _die(f"invalid JSON: {e}")
 
 
-def _help() -> None:
-    print("""kernl — Python AI agents → unikernel images → Firecracker microVMs
+def _help_text() -> str:
+    return """kernl — Python AI agents → unikernel images → Firecracker microVMs
 
   kernl compile <agent.py> [-o out.krn]      compile to .krn image
   kernl run <image.krn> '<json>'             run (Firecracker or process fallback)
   kernl deploy <image.krn> [--pool-size N]   start Firecracker VM pool
   kernl inspect <image.krn>                  show image metadata
-  kernl exec <agent.py> '<json>'             compile + run in one step
+  kernl exec <agent.py> ['<json>']          compile + run in one step
 
 flags:
   --dry-run                     mock LLM calls, no API key needed
@@ -142,7 +148,11 @@ flags:
   --pool-size N                 VMs in pool (default: 4)
   --remote <url>                deploy to unikernel.ai cloud (v0.2)
   --adapter langchain|llama_index  force adapter detection (default: auto)
-""")
+"""
+
+
+def _help() -> None:
+    print(_help_text())
 
 
 def _die(msg: str) -> NoReturn:

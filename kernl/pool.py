@@ -45,6 +45,7 @@ class VMPool:
         self._kernel = __import__("os").environ.get("KERNL_KERNEL", "/opt/kernl/vmlinux")
         self._total = self._ok = self._err = 0
         self._latencies: list[float] = []
+        self._worker_lock = threading.Lock()
 
     def start(self) -> None:
         self._staging = tempfile.mkdtemp(prefix="kernl-pool-")
@@ -87,7 +88,12 @@ class VMPool:
                 new = self._replace(w)
                 if new is None:
                     self._err += 1
-                    return {"status": "error", "output": "worker dead", "steps": 0, "tool_calls": []}
+                    return {
+                        "status": "error",
+                        "output": "worker dead",
+                        "steps": 0,
+                        "tool_calls": [],
+                    }
                 w = new
 
             result = w.vm.call(input_data, dry_run, self.timeout)
@@ -111,6 +117,7 @@ class VMPool:
 
     def _submit_proc(self, input_data: dict, dry_run: bool, t0: float) -> dict:
         from kernl.run import run
+
         result = run(self.krn, input_data, dry_run=dry_run, mode="process")
         ms = (time.monotonic() - t0) * 1000
         self._latencies.append(ms)
@@ -174,8 +181,9 @@ class VMPool:
         old.vm.stop()
         _tap_down(old.tap)
         new = self._spawn(old.index)
-        if new and old in self._workers:
-            self._workers[self._workers.index(old)] = new
+        with self._worker_lock:
+            if new and old in self._workers:
+                self._workers[self._workers.index(old)] = new
         return new
 
 
