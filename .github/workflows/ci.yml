@@ -1,5 +1,4 @@
 name: CI
-
 on:
   push:
     branches: [main]
@@ -14,47 +13,27 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.11", "3.12"]
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-
-      - uses: astral-sh/setup-uv@v4
-        with:
-          enable-cache: true
-
       - name: Install
-        run: uv venv && uv pip install -e ".[dev]"
-
+        run: pip install -e ".[dev]"
       - name: Lint
-        run: uv run ruff check kernl/ tests/
-
+        run: ruff check kernl/ tests/
       - name: Test
-        run: uv run pytest tests/ -v --timeout=60
+        run: pytest tests/ -v --timeout=60
 
   typecheck:
     name: typecheck
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
-      - uses: astral-sh/setup-uv@v4
-        with:
-          enable-cache: true
-
       - name: Install
-        run: uv venv && uv pip install -e ".[dev]"
-
+        run: pip install -e ".[dev]"
       - name: Type check
-        run: uv run mypy kernl/
-
-      - name: Tests (typecheck job)
-        run: uv run pytest tests/ -v --timeout=60
+        run: mypy kernl/
