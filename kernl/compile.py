@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import json
 import shutil
 import subprocess
@@ -7,8 +5,8 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
-from kernl.agent import parse, AgentManifest
-from kernl.bundle import pack, pack_unikernel, RUNTIME_PATH
+from kernl.agent import AgentManifest, parse
+from kernl.bundle import RUNTIME_PATH, pack, pack_unikernel
 
 
 @dataclass

@@ -1,18 +1,13 @@
-from __future__ import annotations
-
 import ast
 import textwrap
-from typing import TYPE_CHECKING
+from typing import Any
 
-if TYPE_CHECKING:
-    from kernl.agent import AgentManifest, ToolDef
+from kernl.agent import AgentManifest, ToolDef, _doc, _params
 
 
-def parse(src: str, tree: ast.Module) -> "AgentManifest | None":
-    from kernl.agent import AgentManifest, ToolDef, _doc, _params
-
+def parse(src: str, tree: ast.Module) -> AgentManifest | None:
     tools: list[ToolDef] = []
-    lines = src.splitlines()
+    lines: list[str] = src.splitlines()
 
     for node in ast.walk(tree):
         if isinstance(node, ast.ClassDef):
@@ -35,8 +30,7 @@ def parse(src: str, tree: ast.Module) -> "AgentManifest | None":
     )
 
 
-def from_tools(tools: list) -> list["ToolDef"]:
-    from kernl.agent import ToolDef
+def from_tools(tools: list) -> list[ToolDef]:
     import inspect
 
     out: list[ToolDef] = []
@@ -50,18 +44,16 @@ def from_tools(tools: list) -> list["ToolDef"]:
     return out
 
 
-def _from_class(node: ast.ClassDef, src: str, lines: list[str]) -> "ToolDef | None":
-    from kernl.agent import ToolDef, _doc, _params
-
+def _from_class(node: ast.ClassDef, src: str, lines: list[str]) -> ToolDef | None:
     name = desc = None
     for item in node.body:
         if isinstance(item, ast.Assign):
             for t in item.targets:
                 if isinstance(t, ast.Name) and isinstance(item.value, ast.Constant):
                     if t.id == "name":
-                        name = item.value.value
+                        name = str(item.value.value)
                     elif t.id == "description":
-                        desc = item.value.value
+                        desc = str(item.value.value)
 
     run = next((i for i in node.body if isinstance(i, ast.FunctionDef) and i.name in ("_run", "run")), None)
     if not run:
@@ -69,11 +61,18 @@ def _from_class(node: ast.ClassDef, src: str, lines: list[str]) -> "ToolDef | No
 
     params, req = _params(run)
     raw = "\n".join(lines[node.lineno - 1 : node.end_lineno])
-    return ToolDef(name=name or node.name.lower(), description=desc or _doc(node), parameters=params, required=req, source=textwrap.dedent(raw))
+    return ToolDef(
+        name=str(name or node.name.lower()),
+        description=str(desc or _doc(node)),
+        parameters=params,
+        required=req,
+        source=textwrap.dedent(raw),
+    )
 
 
-def _from_signature(fn) -> tuple[dict, list]:
+def _from_signature(fn: Any) -> tuple[dict, list]:
     import inspect
+
     sig = inspect.signature(fn)
     tmap = {"str": "string", "int": "integer", "float": "number", "bool": "boolean"}
     params, req = {}, []

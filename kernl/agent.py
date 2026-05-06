@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import ast
 import textwrap
 from dataclasses import dataclass
@@ -97,7 +95,7 @@ def _params(fn: ast.FunctionDef) -> tuple[dict[str, Any], list[str]]:
 def _doc(node: ast.AST) -> str:
     body = getattr(node, "body", [])
     if body and isinstance(body[0], ast.Expr) and isinstance(body[0].value, ast.Constant):
-        return body[0].value.value.strip()
+        return str(body[0].value.value).strip()
     return ""
 
 
@@ -124,5 +122,9 @@ def _deco_kwargs(node: ast.ClassDef, name: str) -> dict[str, Any]:
         if isinstance(d, ast.Call):
             n = d.func
             if (isinstance(n, ast.Name) and n.id == name) or (isinstance(n, ast.Attribute) and n.attr == name):
-                return {kw.arg: kw.value.value for kw in d.keywords if isinstance(kw.value, ast.Constant)}
+                return {
+                    kw.arg: kw.value.value
+                    for kw in d.keywords
+                    if kw.arg is not None and isinstance(kw.value, ast.Constant)
+                }
     return {}

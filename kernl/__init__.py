@@ -1,12 +1,11 @@
-from __future__ import annotations
+from collections.abc import Callable
+from typing import Any, TypeVar
 
-from typing import Any, Callable, TypeVar
-
-from kernl.compile import compile, Image
-from kernl.run import run
-from kernl.deploy import deploy
 from kernl.bundle import inspect
+from kernl.compile import Image, compile
+from kernl.deploy import deploy
 from kernl.pool import VMPool
+from kernl.run import run
 
 __version__ = "0.1.0"
 

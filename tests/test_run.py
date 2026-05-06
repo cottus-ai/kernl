@@ -1,16 +1,10 @@
-from __future__ import annotations
-
-import subprocess
-import sys
-import tempfile
 from pathlib import Path
 
 import pytest
 
+from kernl.bundle import extract_to
 from kernl.compile import compile
 from kernl.run import run
-from kernl.bundle import extract_to
-
 
 BENCH_AGENT = """\
 from kernl import agent, tool

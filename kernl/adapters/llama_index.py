@@ -1,19 +1,14 @@
-from __future__ import annotations
-
 import ast
 import textwrap
-from typing import TYPE_CHECKING
+from typing import Any
 
-if TYPE_CHECKING:
-    from kernl.agent import AgentManifest, ToolDef
+from kernl.agent import AgentManifest, ToolDef, _doc, _params
 
 
-def parse(src: str, tree: ast.Module) -> "AgentManifest | None":
-    from kernl.agent import AgentManifest, ToolDef, _doc, _params
-
+def parse(src: str, tree: ast.Module) -> AgentManifest | None:
     tool_fn_names = _find_tool_fn_names(tree)
     tools: list[ToolDef] = []
-    lines = src.splitlines()
+    lines: list[str] = src.splitlines()
 
     for node in ast.walk(tree):
         if not isinstance(node, ast.FunctionDef):
@@ -65,8 +60,7 @@ def _find_tool_fn_names(tree: ast.Module) -> set[str]:
     return names
 
 
-def from_tools(tools: list) -> list["ToolDef"]:
-    from kernl.agent import ToolDef
+def from_tools(tools: list) -> list[ToolDef]:
     import inspect
 
     out: list[ToolDef] = []
@@ -81,8 +75,9 @@ def from_tools(tools: list) -> list["ToolDef"]:
     return out
 
 
-def _from_sig(fn) -> tuple[dict, list]:
+def _from_sig(fn: Any) -> tuple[dict, list]:
     import inspect
+
     tmap = {"str": "string", "int": "integer", "float": "number", "bool": "boolean"}
     params, req = {}, []
     for n, p in inspect.signature(fn).parameters.items():

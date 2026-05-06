@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import http.client
 import json
 import os
@@ -10,6 +8,7 @@ import sys
 import tempfile
 import time
 from pathlib import Path
+from typing import Any, cast
 
 from kernl.bundle import extract_to
 
@@ -103,7 +102,7 @@ class _FC:
             ("/network-interfaces/eth0", {"iface_id": "eth0", "host_dev_name": self.tap, "guest_mac": _mac(self.vid)}),
             ("/actions", {"action_type": "InstanceStart"}),
         ]:
-            self._put(path, body)
+            self._put(path, cast(dict[str, Any], body))
 
     def call(self, inp: dict, dry: bool, timeout: int) -> dict:
         data = json.dumps({"input": inp, "dry_run": dry}).encode()

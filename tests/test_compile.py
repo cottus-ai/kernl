@@ -1,13 +1,9 @@
-from __future__ import annotations
-
-import json
-import tempfile
 from pathlib import Path
 
 import pytest
 
-from kernl.agent import parse, AgentManifest, ToolDef
-from kernl.bundle import pack, inspect, unpack
+from kernl.agent import parse
+from kernl.bundle import inspect, pack, unpack
 from kernl.compile import compile
 
 NATIVE_AGENT = """\

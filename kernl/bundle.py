@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import hashlib
 import io
 import json
@@ -68,7 +66,9 @@ def inspect(krn: str | Path) -> dict:
     with tarfile.open(krn, "r:gz") as tar:
         names = tar.getnames()
         if "meta.json" in names:
-            meta = json.loads(tar.extractfile("meta.json").read())
+            f = tar.extractfile("meta.json")
+            if f is not None:
+                meta = json.loads(f.read())
     return {
         "name": manifest.get("name"),
         "model": manifest.get("model"),

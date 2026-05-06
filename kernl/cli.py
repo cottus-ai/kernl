@@ -1,8 +1,7 @@
-from __future__ import annotations
-
 import json
 import os
 import sys
+from typing import NoReturn
 
 
 def main() -> None:
@@ -101,6 +100,7 @@ def _inspect(args: list[str]) -> None:
 
 def _exec(args: list[str]) -> None:
     import tempfile
+
     from kernl.compile import compile
     from kernl.run import run
 
@@ -145,7 +145,7 @@ flags:
 """)
 
 
-def _die(msg: str) -> None:
+def _die(msg: str) -> NoReturn:
     print(f"error: {msg}", file=sys.stderr)
     sys.exit(1)
 

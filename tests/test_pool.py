@@ -1,14 +1,10 @@
-from __future__ import annotations
-
 import threading
-import tempfile
 from pathlib import Path
 
 import pytest
 
 from kernl.compile import compile
 from kernl.pool import VMPool
-
 
 AGENT = """\
 from kernl import agent, tool
