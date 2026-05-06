@@ -2,7 +2,7 @@
 Benchmark agent — does a small amount of compute in tools.
 Used to measure spawn/execution overhead, not LLM latency.
 """
-from kernl_sdk import agent, tool
+from kernl import agent, tool
 
 @agent(
     name="bench",

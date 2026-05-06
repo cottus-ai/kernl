@@ -1,7 +1,7 @@
 """
 A minimal Kernl agent that answers a question using Claude.
 """
-from kernl_sdk import agent, tool
+from kernl import agent, tool
 
 @agent(
     name="hello",

@@ -1,20 +1,30 @@
-# Python
 __pycache__/
 *.py[cod]
+*.so
+*.egg
 *.egg-info/
 dist/
 build/
+.eggs/
+.venv/
+venv/
+env/
+.env
 
-# Kernl artifacts
+*.krn
 *.kb
-/tmp/
+*.img
 
-# IDE
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+/tmp/fc-*
+/tmp/kernl-*
+
 .vscode/
 .idea/
-
-# OS
 .DS_Store
-
-# Claude Code
 .claude/

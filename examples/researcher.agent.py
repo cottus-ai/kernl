@@ -2,7 +2,7 @@
 A research agent that looks up information and synthesizes answers.
 Demonstrates multiple tools and multi-step reasoning.
 """
-from kernl_sdk import agent, tool
+from kernl import agent, tool
 
 @agent(
     name="researcher",
