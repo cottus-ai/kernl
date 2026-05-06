@@ -23,13 +23,15 @@ def parse(src: str, tree: ast.Module) -> AgentManifest | None:
 
         params, req = _params(node)
         raw = "\n".join(lines[node.lineno - 1 : node.end_lineno])
-        tools.append(ToolDef(
-            name=node.name,
-            description=_doc(node),
-            parameters=params,
-            required=req,
-            source=textwrap.dedent(raw),
-        ))
+        tools.append(
+            ToolDef(
+                name=node.name,
+                description=_doc(node),
+                parameters=params,
+                required=req,
+                source=textwrap.dedent(raw),
+            )
+        )
 
     if not tools:
         return None
@@ -71,7 +73,11 @@ def from_tools(tools: list) -> list[ToolDef]:
         desc = (meta.description if meta else "") or (fn.__doc__ or "")
         params, req = _from_sig(fn) if fn else ({}, [])
         src = inspect.getsource(fn) if fn else f"def {name}(): pass"
-        out.append(ToolDef(name=name, description=desc.strip(), parameters=params, required=req, source=src))
+        out.append(
+            ToolDef(
+                name=name, description=desc.strip(), parameters=params, required=req, source=src
+            )
+        )
     return out
 
 

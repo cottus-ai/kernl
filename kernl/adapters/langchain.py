@@ -40,7 +40,9 @@ def from_tools(tools: list) -> list[ToolDef]:
         fn = getattr(t, "func", getattr(t, "_run", None))
         params, req = _from_signature(fn) if fn else ({}, [])
         src = inspect.getsource(fn) if fn else f"def {name}(): pass"
-        out.append(ToolDef(name=name, description=desc, parameters=params, required=req, source=src))
+        out.append(
+            ToolDef(name=name, description=desc, parameters=params, required=req, source=src)
+        )
     return out
 
 
@@ -55,7 +57,9 @@ def _from_class(node: ast.ClassDef, src: str, lines: list[str]) -> ToolDef | Non
                     elif t.id == "description":
                         desc = str(item.value.value)
 
-    run = next((i for i in node.body if isinstance(i, ast.FunctionDef) and i.name in ("_run", "run")), None)
+    run = next(
+        (i for i in node.body if isinstance(i, ast.FunctionDef) and i.name in ("_run", "run")), None
+    )
     if not run:
         return None
 
@@ -79,7 +83,10 @@ def _from_signature(fn: Any) -> tuple[dict, list]:
     for name, p in sig.parameters.items():
         if name == "self":
             continue
-        t = tmap.get(p.annotation.__name__ if p.annotation is not inspect.Parameter.empty else "str", "string")
+        t = tmap.get(
+            p.annotation.__name__ if p.annotation is not inspect.Parameter.empty else "str",
+            "string",
+        )
         params[name] = {"type": t}
         req.append(name)
     return params, req
