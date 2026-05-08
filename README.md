@@ -1,6 +1,6 @@
 # kernl
 
-Unikernel SDK for AI agents. Compile a Python agent to an 8MB bootable image. Run it on a Firecracker microVM in under 50ms.
+OS SDK for AI agents. Compile a Python agent into an 8MB bootable image. Run it on a Firecracker microVM in under 50ms.
 
 ```
 agent.py  →  kernl compile  →  agent.krn  →  kernl run  →  Firecracker microVM
