@@ -20,7 +20,7 @@ def main() -> None:
     }.get(cmd)
 
     if fn is None:
-        _die(f"unknown command '{cmd}'. Run 'kernl --help'.")
+        _die(f"unknown command '{cmd}'. Run 'akernl --help'.")
 
     try:
         fn(rest)
@@ -39,10 +39,10 @@ def _flag(args: list[str], flag: str, default: str | None = None) -> str | None:
 
 
 def _compile(args: list[str]) -> None:
-    from kernl.compile import compile
+    from akernl.compile import compile
 
     if not args or args[0].startswith("-"):
-        _die("usage: kernl compile <agent.py> [-o <path>] [--adapter langchain|llama_index]")
+        _die("usage: akernl compile <agent.py> [-o <path>] [--adapter langchain|llama_index]")
 
     out = _flag(args, "-o") or _flag(args, "--output")
     img = compile(args[0], out)
@@ -51,10 +51,10 @@ def _compile(args: list[str]) -> None:
 
 
 def _run(args: list[str]) -> None:
-    from kernl.run import run
+    from akernl.run import run
 
     if len(args) < 2 or args[1].startswith("-"):
-        _die("usage: kernl run <image.krn> '<json>' [--dry-run] [--mode process|firecracker|auto]")
+        _die("usage: akernl run <image.krn> '<json>' [--dry-run] [--mode process|firecracker|auto]")
 
     krn, inp = args[0], _parse_json(args[1])
     dry = "--dry-run" in args
@@ -69,10 +69,10 @@ def _run(args: list[str]) -> None:
 
 
 def _deploy(args: list[str]) -> None:
-    from kernl.deploy import deploy
+    from akernl.deploy import deploy
 
     if not args or args[0].startswith("-"):
-        _die("usage: kernl deploy <image.krn> [--pool-size N] [--remote <url>]")
+        _die("usage: akernl deploy <image.krn> [--pool-size N] [--remote <url>]")
 
     remote = _flag(args, "--remote")
     size = int(_flag(args, "--pool-size") or 4)
@@ -85,10 +85,10 @@ def _deploy(args: list[str]) -> None:
 
 
 def _inspect(args: list[str]) -> None:
-    from kernl.bundle import inspect
+    from akernl.bundle import inspect
 
     if not args or args[0].startswith("-"):
-        _die("usage: kernl inspect <image.krn>")
+        _die("usage: akernl inspect <image.krn>")
 
     info = inspect(args[0])
     print(f"  name        {info.get('name', 'unknown')}")
@@ -104,11 +104,11 @@ def _inspect(args: list[str]) -> None:
 def _exec(args: list[str]) -> None:
     import tempfile
 
-    from kernl.compile import compile
-    from kernl.run import run
+    from akernl.compile import compile
+    from akernl.run import run
 
     if not args or args[0].startswith("-"):
-        _die("usage: kernl exec <agent.py> ['<json>'] [--dry-run]")
+        _die("usage: akernl exec <agent.py> ['<json>'] [--dry-run]")
 
     pos = [a for a in args[1:] if not a.startswith("-")]
     inp = _parse_json(pos[0]) if pos else {}
@@ -134,13 +134,13 @@ def _parse_json(s: str) -> dict:
 
 
 def _help_text() -> str:
-    return """kernl — Python AI agents → unikernel images → Firecracker microVMs
+    return """akernl — Python AI agents → unikernel images → Firecracker microVMs
 
-  kernl compile <agent.py> [-o out.krn]      compile to .krn image
-  kernl run <image.krn> '<json>'             run (Firecracker or process fallback)
-  kernl deploy <image.krn> [--pool-size N]   start Firecracker VM pool
-  kernl inspect <image.krn>                  show image metadata
-  kernl exec <agent.py> ['<json>']          compile + run in one step
+  akernl compile <agent.py> [-o out.krn]      compile to .krn image
+  akernl run <image.krn> '<json>'             run (Firecracker or process fallback)
+  akernl deploy <image.krn> [--pool-size N]   start Firecracker VM pool
+  akernl inspect <image.krn>                  show image metadata
+  akernl exec <agent.py> ['<json>']          compile + run in one step
 
 flags:
   --dry-run                     mock LLM calls, no API key needed

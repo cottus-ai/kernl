@@ -11,7 +11,7 @@ import time
 from pathlib import Path
 from typing import Any, cast
 
-from kernl.bundle import extract_to
+from akernl.bundle import extract_to
 
 
 def run(
@@ -48,7 +48,7 @@ def run(
 
 
 def _run_proc(staging: Path, input_data: dict, dry_run: bool, timeout: int) -> dict:
-    env = {**os.environ, "KERNL_MANIFEST": str(staging / "manifest.json"), "KERNL_MODE": "single"}
+    env = {**os.environ, "KERNL_MANIFEST": str(staging / "manifest.json"), "AKERNL_MODE": "single"}
     if dry_run:
         env["KERNL_DRY_RUN"] = "1"
 
@@ -80,14 +80,14 @@ def _run_proc(staging: Path, input_data: dict, dry_run: bool, timeout: int) -> d
 
 
 def _run_fc(staging: Path, input_data: dict, dry_run: bool, timeout: int) -> dict:
-    vm_id = f"kernl-{os.getpid()}"
+    vm_id = f"akernl-{os.getpid()}"
     sock = f"/tmp/fc-{vm_id}.sock"
     tap, guest_ip = "tap_krun0", "172.16.0.2"
 
     _tap_up(tap, "172.16.0.1")
     vm = _FC(vm_id, sock, tap, guest_ip)
     try:
-        vm.start(os.environ.get("KERNL_KERNEL", "/opt/kernl/vmlinux"), str(staging / "rootfs.img"))
+        vm.start(os.environ.get("KERNL_KERNEL", "/opt/akernl/vmlinux"), str(staging / "rootfs.img"))
         return vm.call(input_data, dry_run, timeout)
     finally:
         vm.stop()
@@ -145,7 +145,7 @@ class _FC:
     def call(self, inp: dict, dry: bool, timeout: int) -> dict:
         data = json.dumps({"input": inp, "dry_run": dry}).encode()
         headers = {"Content-Type": "application/json"}
-        tok = os.environ.get("KERNL_TOKEN")
+        tok = os.environ.get("AKERNL_TOKEN")
         if tok:
             headers["Authorization"] = f"Bearer {tok}"
         deadline = time.monotonic() + timeout

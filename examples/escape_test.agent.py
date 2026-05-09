@@ -2,7 +2,7 @@
 Agent that attempts to read host files — should fail inside the sandbox.
 Used to verify isolation is working.
 """
-from kernl import agent, tool
+from akernl import agent, tool
 
 @agent(
     name="escape_test",

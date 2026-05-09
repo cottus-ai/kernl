@@ -3,11 +3,11 @@ from pathlib import Path
 
 import pytest
 
-from kernl.compile import compile
-from kernl.pool import VMPool
+from akernl.compile import compile
+from akernl.pool import VMPool
 
 AGENT = """\
-from kernl import agent, tool
+from akernl import agent, tool
 
 @agent(name="pool_test", model="claude-sonnet-4-20250514", max_steps=2)
 class PoolTestAgent:

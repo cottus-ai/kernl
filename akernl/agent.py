@@ -34,7 +34,7 @@ def parse(path: str | Path) -> AgentManifest:
         if isinstance(node, ast.ClassDef) and _has_deco(node, "agent"):
             return _native_agent(node, src)
 
-    from kernl.adapters import langchain, llama_index
+    from akernl.adapters import langchain, llama_index
 
     if _imports_root_module(tree, "langchain"):
         m = langchain.parse(src, tree)

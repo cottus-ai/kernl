@@ -2,12 +2,12 @@ from pathlib import Path
 
 import pytest
 
-from kernl.bundle import extract_to
-from kernl.compile import compile
-from kernl.run import run
+from akernl.bundle import extract_to
+from akernl.compile import compile
+from akernl.run import run
 
 BENCH_AGENT = """\
-from kernl import agent, tool
+from akernl import agent, tool
 
 @agent(name="bench", model="claude-sonnet-4-20250514", max_steps=3)
 class BenchAgent:
@@ -25,7 +25,7 @@ class BenchAgent:
 """
 
 BROKEN_AGENT = """\
-from kernl import agent, tool
+from akernl import agent, tool
 
 @agent(name="broken", model="claude-sonnet-4-20250514", max_steps=3)
 class BrokenAgent:
@@ -38,7 +38,7 @@ class BrokenAgent:
 """
 
 NO_TOOLS_AGENT = """\
-from kernl import agent, tool
+from akernl import agent, tool
 
 @agent(name="notool", model="claude-sonnet-4-20250514", max_steps=2)
 class NoToolAgent:
@@ -134,7 +134,7 @@ class TestRunErrors:
 
     def test_timeout_returns_timeout_or_error(self, tmp_path: Path) -> None:
         src = """\
-from kernl import agent, tool
+from akernl import agent, tool
 
 @agent(name="slow", model="claude-sonnet-4-20250514", max_steps=1)
 class SlowAgent:
@@ -157,7 +157,7 @@ class TestRunProcess:
         staging = tmp_path / "staging"
         staging.mkdir()
         extract_to(bench_krn, staging)
-        from kernl.run import _run_proc
+        from akernl.run import _run_proc
 
         r = _run_proc(staging, {"input_data": "hello"}, dry_run=True, timeout=30)
         assert r["status"] == "complete"
@@ -166,7 +166,7 @@ class TestRunProcess:
         staging = tmp_path / "staging"
         staging.mkdir()
         extract_to(bench_krn, staging)
-        from kernl.run import _run_proc
+        from akernl.run import _run_proc
 
         r = _run_proc(staging, {"input_data": "hello"}, dry_run=True, timeout=30)
         assert r["status"] == "complete"

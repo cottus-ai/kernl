@@ -1,4 +1,4 @@
-from kernl.cli import main
+from akernl.cli import main
 
 if __name__ == "__main__":
     main()

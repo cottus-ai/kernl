@@ -2,7 +2,7 @@ import ast
 import textwrap
 from typing import Any
 
-from kernl.agent import AgentManifest, ToolDef, _doc, _params
+from akernl.agent import AgentManifest, ToolDef, _doc, _params
 
 
 def parse(src: str, tree: ast.Module) -> AgentManifest | None:

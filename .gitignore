@@ -22,7 +22,7 @@ env/
 htmlcov/
 
 /tmp/fc-*
-/tmp/kernl-*
+/tmp/akernl-*
 
 .vscode/
 .idea/

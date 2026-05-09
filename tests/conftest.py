@@ -2,11 +2,11 @@ from pathlib import Path
 
 import pytest
 
-from kernl.agent import AgentManifest, parse
-from kernl.bundle import pack
+from akernl.agent import AgentManifest, parse
+from akernl.bundle import pack
 
 SAMPLE_AGENT_SOURCE = """\
-from kernl import agent, tool
+from akernl import agent, tool
 
 @agent(name="sample", model="claude-sonnet-4-20250514", max_steps=3)
 class SampleAgent:

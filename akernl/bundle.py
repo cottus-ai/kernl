@@ -5,7 +5,7 @@ import tarfile
 import tempfile
 from pathlib import Path
 
-from kernl.agent import AgentManifest
+from akernl.agent import AgentManifest
 
 RUNTIME_PATH = Path(__file__).parent / "runtime.py"
 

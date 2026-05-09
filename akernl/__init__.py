@@ -1,11 +1,11 @@
 from collections.abc import Callable
 from typing import Any, TypeVar
 
-from kernl.bundle import inspect
-from kernl.compile import Image, compile
-from kernl.deploy import deploy
-from kernl.pool import VMPool
-from kernl.run import run
+from akernl.bundle import inspect
+from akernl.compile import Image, compile
+from akernl.deploy import deploy
+from akernl.pool import VMPool
+from akernl.run import run
 
 __version__ = "0.1.0"
 
@@ -14,14 +14,14 @@ _F = TypeVar("_F", bound=Callable[..., Any])
 
 def agent(**kwargs: Any) -> Callable[[type], type]:
     def _wrap(cls: type) -> type:
-        cls._kernl = kwargs  # type: ignore[attr-defined]
+        setattr(cls, "_akernl", kwargs)
         return cls
 
     return _wrap
 
 
 def tool(fn: _F) -> _F:
-    fn._kernl_tool = True  # type: ignore[attr-defined]
+    setattr(fn, "_akernl_tool", True)
     return fn
 
 

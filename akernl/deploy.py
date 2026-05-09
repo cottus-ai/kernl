@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Any
 
-from kernl.pool import VMPool
+from akernl.pool import VMPool
 
 
 def deploy(

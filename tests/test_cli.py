@@ -1,6 +1,6 @@
 import pytest
 
-from kernl.cli import _flag, _help_text, _parse_json
+from akernl.cli import _flag, _help_text, _parse_json
 
 
 def test_parse_json_valid() -> None:

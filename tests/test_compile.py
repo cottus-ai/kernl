@@ -2,12 +2,12 @@ from pathlib import Path
 
 import pytest
 
-from kernl.agent import AgentManifest, parse
-from kernl.bundle import inspect, pack, unpack
-from kernl.compile import compile
+from akernl.agent import AgentManifest, parse
+from akernl.bundle import inspect, pack, unpack
+from akernl.compile import compile
 
 NATIVE_AGENT = """\
-from kernl import agent, tool
+from akernl import agent, tool
 
 @agent(name="calc", model="claude-sonnet-4-20250514", max_steps=5)
 class CalcAgent:
@@ -258,7 +258,7 @@ class TestCompile:
 
 
 NO_DOC_TOOL_AGENT = """\
-from kernl import agent, tool
+from akernl import agent, tool
 
 @agent(name="nd", model="claude-sonnet-4-20250514", max_steps=2)
 class A:
@@ -271,7 +271,7 @@ class A:
 
 OPTIONAL_STATE_AGENT = """\
 from typing import Optional
-from kernl import agent, tool
+from akernl import agent, tool
 
 @agent(name="opt", model="claude-sonnet-4-20250514", max_steps=2)
 class A:
@@ -283,7 +283,7 @@ class A:
 """
 
 DEFAULT_PARAM_AGENT = """\
-from kernl import agent, tool
+from akernl import agent, tool
 
 @agent(name="defp", model="claude-sonnet-4-20250514", max_steps=2)
 class A:
@@ -296,7 +296,7 @@ class A:
 """
 
 MULTI_AGENT_SOURCE = """\
-from kernl import agent, tool
+from akernl import agent, tool
 
 @agent(name="first", model="claude-sonnet-4-20250514", max_steps=2)
 class First:

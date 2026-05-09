@@ -2,7 +2,7 @@
 A research agent that looks up information and synthesizes answers.
 Demonstrates multiple tools and multi-step reasoning.
 """
-from kernl import agent, tool
+from akernl import agent, tool
 
 @agent(
     name="researcher",
@@ -19,7 +19,7 @@ class ResearchAgent:
         kb = {
             "python": "Python is a high-level programming language created by Guido van Rossum in 1991. It emphasizes readability and supports multiple paradigms.",
             "rust": "Rust is a systems programming language focused on safety, speed, and concurrency. Created by Graydon Hoare at Mozilla, released in 2015.",
-            "kernl": "Kernl is an experimental agent runtime that compiles agent definitions into minimal execution units for high-density deployment.",
+            "akernl": "Akernl is an experimental agent runtime that compiles agent definitions into minimal execution units for high-density deployment.",
             "firecracker": "Firecracker is a virtual machine monitor (VMM) created by AWS for serverless computing. It creates microVMs in ~125ms with minimal memory overhead.",
         }
         for key, value in kb.items():

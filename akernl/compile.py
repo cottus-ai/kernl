@@ -6,8 +6,8 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
-from kernl.agent import AgentManifest, parse
-from kernl.bundle import RUNTIME_PATH, pack, pack_unikernel
+from akernl.agent import AgentManifest, parse
+from akernl.bundle import RUNTIME_PATH, pack, pack_unikernel
 
 
 @dataclass
@@ -32,7 +32,7 @@ def compile(agent_path: str | Path, output: str | Path | None = None) -> Image:
         except (FileNotFoundError, OSError):
             pass
         except Exception as e:
-            print(f"kernl: unikernel build skipped: {e}", file=sys.stderr)
+            print(f"akernl: unikernel build skipped: {e}", file=sys.stderr)
 
     _, h = pack(manifest, agent_src, out)
     return Image(path=out, hash=h, image_type="portable", size=out.stat().st_size)
@@ -83,7 +83,7 @@ def _ops_config(manifest: AgentManifest) -> dict:
         "Language": "python",
         "Args": ["/runtime.py"],
         "Files": ["agent.py", "runtime.py", "manifest.json"],
-        "Env": {"KERNL_MANIFEST": "/manifest.json", "KERNL_MODE": "server"},
+        "Env": {"KERNL_MANIFEST": "/manifest.json", "AKERNL_MODE": "server"},
         "RunConfig": {"Memory": "128m", "Ports": ["8080"]},
     }
 

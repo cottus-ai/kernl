@@ -3,8 +3,8 @@
 ## Setup
 
 ```bash
-git clone https://github.com/unikernel-ai/kernl
-cd kernl
+git clone https://github.com/cottus-ai/akernl
+cd akernl
 uv venv && source .venv/bin/activate
 uv pip install -e ".[dev]"
 ```
@@ -18,7 +18,7 @@ pytest tests/ -v
 ## Linting
 
 ```bash
-ruff check kernl/
+ruff check akernl/
 ```
 
 ## Making changes
@@ -33,7 +33,7 @@ ruff check kernl/
 
 1. Fork the repo and create a branch from `main`.
 2. Make your changes.
-3. Run `pytest` and `ruff check kernl/`.
+3. Run `pytest` and `ruff check akernl/`.
 4. Open a PR with a clear description of what and why.
 
 ## Style

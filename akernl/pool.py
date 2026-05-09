@@ -8,8 +8,8 @@ import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from kernl.bundle import extract_to
-from kernl.run import _FC, _fc_available, _tap_down, _tap_up
+from akernl.bundle import extract_to
+from akernl.run import _FC, _fc_available, _tap_down, _tap_up
 
 
 @dataclass
@@ -42,13 +42,13 @@ class VMPool:
         self._workers: list[_Worker] = []
         self._staging: str | None = None
         self._rootfs: str | None = None
-        self._kernel = __import__("os").environ.get("KERNL_KERNEL", "/opt/kernl/vmlinux")
+        self._kernel = __import__("os").environ.get("KERNL_KERNEL", "/opt/akernl/vmlinux")
         self._total = self._ok = self._err = 0
         self._latencies: list[float] = []
         self._worker_lock = threading.Lock()
 
     def start(self) -> None:
-        self._staging = tempfile.mkdtemp(prefix="kernl-pool-")
+        self._staging = tempfile.mkdtemp(prefix="akernl-pool-")
         extract_to(self.krn, Path(self._staging))
         rootfs = Path(self._staging) / "rootfs.img"
         self._rootfs = str(rootfs) if rootfs.exists() else None
@@ -116,7 +116,7 @@ class VMPool:
             self._q.put(w)
 
     def _submit_proc(self, input_data: dict, dry_run: bool, t0: float) -> dict:
-        from kernl.run import run
+        from akernl.run import run
 
         result = run(self.krn, input_data, dry_run=dry_run, mode="process")
         ms = (time.monotonic() - t0) * 1000
@@ -153,7 +153,7 @@ class VMPool:
     def _spawn(self, i: int) -> _Worker | None:
         if not _fc_available() or not self._rootfs:
             return None
-        vid = f"kernl-{uuid.uuid4().hex[:8]}"
+        vid = f"akernl-{uuid.uuid4().hex[:8]}"
         tap = f"tap{i}"
         host = f"172.{16 + i // 256}.{i % 256}.1"
         guest = f"172.{16 + i // 256}.{i % 256}.2"

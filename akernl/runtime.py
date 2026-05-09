@@ -5,7 +5,7 @@ import sys
 import traceback
 import urllib.request
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from typing import Any
+from typing import Any, cast
 
 
 def run_agent(manifest: dict, input_data: dict, dry_run: bool = False) -> dict:
@@ -17,7 +17,7 @@ def run_agent(manifest: dict, input_data: dict, dry_run: bool = False) -> dict:
     provider = _llm_provider()
 
     if not dry_run and not provider:
-        print("kernl: no ANTHROPIC_API_KEY or OPENAI_API_KEY; using mock LLM", file=sys.stderr)
+        print("akernl: no ANTHROPIC_API_KEY or OPENAI_API_KEY; using mock LLM", file=sys.stderr)
         dry_run = True
 
     while steps < manifest.get("max_steps", 10):
@@ -260,7 +260,7 @@ def _build_executors(tools: list[dict]) -> dict[str, Any]:
             if fn:
                 out[name] = fn
         except Exception as e:
-            print(f"kernl: skipping tool {t.get('name', '?')!r}: {e}", file=sys.stderr)
+            print(f"akernl: skipping tool {t.get('name', '?')!r}: {e}", file=sys.stderr)
             traceback.print_exc(limit=3, file=sys.stderr)
     return out
 
@@ -299,7 +299,7 @@ class _Handler(BaseHTTPRequestHandler):
         if self.path != "/run":
             self.send_error(404)
             return
-        token = os.environ.get("KERNL_TOKEN")
+        token = os.environ.get("AKERNL_TOKEN")
         if token:
             auth = self.headers.get("Authorization", "")
             if auth != f"Bearer {token}":
@@ -310,7 +310,9 @@ class _Handler(BaseHTTPRequestHandler):
                 return
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
         dry = body.get("dry_run", False) or os.environ.get("KERNL_DRY_RUN") == "1"
-        resp = json.dumps(run_agent(self.server.manifest, body.get("input", {}), dry)).encode()  # type: ignore[attr-defined]
+        resp = json.dumps(
+            run_agent(cast(Any, self.server).manifest, body.get("input", {}), dry)
+        ).encode()
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(resp)))
@@ -337,9 +339,9 @@ def main() -> None:
     else:
         manifest = json.loads(sys.stdin.readline())
 
-    if os.environ.get("KERNL_MODE") == "server":
+    if os.environ.get("AKERNL_MODE") == "server":
         srv = HTTPServer(("0.0.0.0", int(os.environ.get("KERNL_PORT", "8080"))), _Handler)
-        srv.manifest = manifest  # type: ignore[attr-defined]
+        setattr(srv, "manifest", manifest)
         srv.serve_forever()
     else:
         body = json.loads(sys.stdin.readline())

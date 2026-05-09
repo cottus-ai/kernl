@@ -1,9 +1,9 @@
-# kernl
+# akernl
 
 OS SDK for AI agents. Compile a Python agent into an 8MB bootable image. Run it on a Firecracker microVM in under 50ms.
 
 ```
-agent.py  →  kernl compile  →  agent.krn  →  kernl run  →  Firecracker microVM
+agent.py  →  akernl compile  →  agent.krn  →  akernl run  →  Firecracker microVM
 ```
 
 ## Why
@@ -14,13 +14,13 @@ Containers give AI agents everything Linux has — and that's the problem. A Pyt
 
 ```bash
 # recommended
-uv tool install kernl
+uv tool install akernl
 
 # or
-pip install kernl
+pip install akernl
 ```
 
-Optional: install [OPS](https://ops.city) for actual unikernel compilation and [Firecracker](https://firecracker-microvm.github.io) for microVM execution. Without them, kernl falls back to subprocess isolation automatically — the same CLI, same API, no code changes needed.
+Optional: install [OPS](https://ops.city) for actual unikernel compilation and [Firecracker](https://firecracker-microvm.github.io) for microVM execution. Without them, akernl falls back to subprocess isolation automatically — the same CLI, same API, no code changes needed.
 
 ```bash
 # OPS (Nanos unikernel compiler)
@@ -37,7 +37,7 @@ curl -fsSL https://github.com/firecracker-microvm/firecracker/releases/download/
 
 ```python
 # agent.py
-from kernl import agent, tool
+from akernl import agent, tool
 
 @agent(name="researcher", model="claude-sonnet-4-20250514", max_steps=5)
 class ResearchAgent:
@@ -58,7 +58,7 @@ class ResearchAgent:
 **2. Compile**
 
 ```bash
-kernl compile agent.py
+akernl compile agent.py
 #   agent.krn
 #   8,421,376 bytes  [unikernel]  a3f9b1c2d4e5f6a7
 ```
@@ -66,7 +66,7 @@ kernl compile agent.py
 **3. Run**
 
 ```bash
-kernl run agent.krn '{"query": "firecracker"}' --dry-run
+akernl run agent.krn '{"query": "firecracker"}' --dry-run
 #   status   complete
 #   output   Result: VMM by AWS. <50ms cold start...
 #   steps    2  elapsed 34ms
@@ -77,7 +77,7 @@ Drop `--dry-run` and set `ANTHROPIC_API_KEY` to run against the real API.
 **4. Inspect**
 
 ```bash
-kernl inspect agent.krn
+akernl inspect agent.krn
 #   name        researcher
 #   model       claude-sonnet-4-20250514
 #   framework   native
@@ -91,7 +91,7 @@ kernl inspect agent.krn
 **Native decorators** (recommended)
 
 ```python
-from kernl import agent, tool
+from akernl import agent, tool
 
 @agent(name="my_agent", model="claude-sonnet-4-20250514", max_steps=5)
 class MyAgent:
@@ -117,7 +117,7 @@ class SearchTool(BaseTool):
 ```
 
 ```bash
-kernl compile langchain_agent.py   # detected automatically
+akernl compile langchain_agent.py   # detected automatically
 ```
 
 **LlamaIndex**
@@ -133,34 +133,34 @@ tools = [FunctionTool.from_defaults(fn=search)]
 ```
 
 ```bash
-kernl compile llama_agent.py   # detected automatically
+akernl compile llama_agent.py   # detected automatically
 ```
 
 ## CLI reference
 
 ```
-kernl compile <agent.py> [-o out.krn]
+akernl compile <agent.py> [-o out.krn]
   Compile agent to a .krn unikernel image.
   Uses OPS/Nanos if available, otherwise produces a portable bundle.
 
-kernl run <image.krn> '<json>' [--dry-run] [--mode process|firecracker|auto]
+akernl run <image.krn> '<json>' [--dry-run] [--mode process|firecracker|auto]
   Run an image. Firecracker if available, subprocess otherwise.
   --dry-run: mock LLM calls, no API key needed.
 
-kernl deploy <image.krn> [--pool-size N] [--remote <url>]
+akernl deploy <image.krn> [--pool-size N] [--remote <url>]
   Start a Firecracker VM pool. Default pool size: 4.
 
-kernl inspect <image.krn>
+akernl inspect <image.krn>
   Show image metadata: name, model, tools, image type, size.
 
-kernl exec <agent.py> '<json>' [--dry-run]
+akernl exec <agent.py> '<json>' [--dry-run]
   Compile and run in one step. Cleans up the .krn after.
 ```
 
 ## Python API
 
 ```python
-from kernl import compile, run, deploy
+from akernl import compile, run, deploy
 
 img = compile("agent.py")
 result = run(img.path, {"query": "unikernels"}, dry_run=True)
@@ -175,16 +175,16 @@ pool.shutdown()
 
 ```
 agent.py
-  ↓  kernl/agent.py     AST parse — no code execution
-  ↓  kernl/bundle.py    pack manifest + source + runtime → .krn
-  ↓  kernl/compile.py   OPS → Nanos unikernel (or portable .krn fallback)
-  ↓  kernl/run.py       Firecracker boot (or subprocess fallback)
-  ↓  kernl/runtime.py   agent loop: LLM → tools → repeat  [stdlib only]
+  ↓  akernl/agent.py     AST parse — no code execution
+  ↓  akernl/bundle.py    pack manifest + source + runtime → .krn
+  ↓  akernl/compile.py   OPS → Nanos unikernel (or portable .krn fallback)
+  ↓  akernl/run.py       Firecracker boot (or subprocess fallback)
+  ↓  akernl/runtime.py   agent loop: LLM → tools → repeat  [stdlib only]
   ↓  Anthropic API
 ```
 
 ```
-kernl/
+akernl/
 ├── agent.py        AST parser — @agent/@tool, LangChain, LlamaIndex
 ├── bundle.py       .krn format — pack/unpack/inspect
 ├── compile.py      agent.py → .krn
@@ -210,7 +210,7 @@ kernl/
 ## Development
 
 ```bash
-git clone https://github.com/unikernel-ai/kernl && cd kernl
+git clone https://github.com/cottus-ai/akernl && cd akernl
 uv venv && source .venv/bin/activate
 uv pip install -e ".[dev]"
 pytest tests/ -v
