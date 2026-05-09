@@ -5,7 +5,7 @@ def search(query: str) -> str:
     """Search the knowledge base for a topic."""
     kb = {
         "firecracker": "Firecracker is a VMM by AWS for microVMs. <50ms cold start.",
-        "unikernel": "Unikernels are single-address-space OS images with minimal attack surface.",
+        "microvm": "MicroVMs are lightweight VMs with hardware isolation and fast boot times.",
         "python": "Python is a high-level interpreted language with dynamic typing.",
     }
     for key, val in kb.items():

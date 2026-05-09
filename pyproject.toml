@@ -5,12 +5,12 @@ build-backend = "hatchling.build"
 [project]
 name = "akernl"
 version = "0.1.0"
-description = "Compile Python AI agents to unikernels, deploy on Firecracker microVMs"
+description = "Self-hosted sandbox API for AI agent code execution in Firecracker microVMs"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.11"
-authors = [{ name = "unikernel.ai" }]
-keywords = ["unikernel", "firecracker", "ai", "agents", "langchain", "llamaindex"]
+authors = [{ name = "Cottus AI" }]
+keywords = ["sandbox", "firecracker", "ai", "agents", "self-hosted", "microvm", "code-execution", "sandbox-api"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -20,7 +20,7 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://unikernel.ai"
+Homepage = "https://cottus-ai.github.io/akernl"
 Repository = "https://github.com/cottus-ai/akernl"
 
 [project.scripts]
@@ -30,6 +30,7 @@ akernl = "akernl.cli:main"
 langchain = ["langchain-core>=0.2"]
 llamaindex = ["llama-index-core>=0.10"]
 dev = ["pytest>=8.0", "pytest-timeout>=2.0", "mypy>=1.10", "ruff>=0.4"]
+serve = ["fastapi>=0.115", "uvicorn[standard]>=0.30"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["akernl"]

@@ -1,218 +1,167 @@
 # akernl
 
-OS SDK for AI agents. Compile a Python agent into an 8MB bootable image. Run it on a Firecracker microVM in under 50ms.
+Self-hosted sandbox API for AI agent code execution in Firecracker microVMs.
+
+Run untrusted code — Python, Node.js, shell, Go — in isolated sandboxes with a single HTTP call. Deploy on your own infrastructure, keep your data on-prem.
 
 ```
-agent.py  →  akernl compile  →  agent.krn  →  akernl run  →  Firecracker microVM
+POST /api/v1/sandboxes              →  sandbox created, code executed
+POST /api/v1/sandboxes/:id/execute  →  subsequent executions, state retained
+DELETE /api/v1/sandboxes/:id        →  sandbox destroyed
 ```
 
 ## Why
 
-Containers give AI agents everything Linux has — and that's the problem. A Python agent needs a file system, a network stack, a shell, and 300+ syscalls just to make one API call. Unikernels strip all of that away: your agent runs directly on the hypervisor with ~26 syscalls, no shell, no libc, no attack surface. Cold starts drop from seconds to milliseconds. Images go from gigabytes to megabytes.
+Existing sandbox solutions are either cloud-only, container-based (shared kernel, exploitable), or slow (seconds to cold-start). akernl runs each tenant's sandboxes in Firecracker microVMs — hardware-isolated, booting in under 50ms, with a pool of pre-warmed VMs ready to serve requests immediately.
+
+You own the runtime. No data leaves your infra.
 
 ## Install
 
 ```bash
-# recommended
-uv tool install akernl
-
-# or
 pip install akernl
-```
 
-Optional: install [OPS](https://ops.city) for actual unikernel compilation and [Firecracker](https://firecracker-microvm.github.io) for microVM execution. Without them, akernl falls back to subprocess isolation automatically — the same CLI, same API, no code changes needed.
+# with the REST API server
+pip install "akernl[serve]"
 
-```bash
-# OPS (Nanos unikernel compiler)
-curl https://ops.city/get.sh | sh
-
-# Firecracker (Linux only)
-curl -fsSL https://github.com/firecracker-microvm/firecracker/releases/download/v1.7.0/firecracker-v1.7.0-x86_64.tgz \
-  | tar xz && sudo mv release-v1.7.0-x86_64/firecracker-v1.7.0-x86_64 /usr/local/bin/firecracker
+# recommended
+uv tool install "akernl[serve]"
 ```
 
 ## Quickstart
 
-**1. Write an agent**
-
-```python
-# agent.py
-from akernl import agent, tool
-
-@agent(name="researcher", model="claude-sonnet-4-20250514", max_steps=5)
-class ResearchAgent:
-    query: str
-
-    @tool
-    def search(self, topic: str) -> str:
-        """Search the knowledge base."""
-        kb = {"firecracker": "VMM by AWS. <50ms cold start, minimal footprint."}
-        return kb.get(topic.lower(), f"No results for: {topic}")
-
-    @tool
-    def summarize(self, text: str) -> str:
-        """Summarize text to its key points."""
-        return " ".join(text.split()[:30])
-```
-
-**2. Compile**
+**Start the server**
 
 ```bash
-akernl compile agent.py
-#   agent.krn
-#   8,421,376 bytes  [unikernel]  a3f9b1c2d4e5f6a7
+export AKERNL_ROOT_KEY=my-root-key
+akernl serve
+# Listening on 0.0.0.0:8080
 ```
 
-**3. Run**
+**Run code**
 
 ```bash
-akernl run agent.krn '{"query": "firecracker"}' --dry-run
-#   status   complete
-#   output   Result: VMM by AWS. <50ms cold start...
-#   steps    2  elapsed 34ms
+curl -X POST http://localhost:8080/api/v1/sandboxes \
+  -H "x-api-key: $AKERNL_ROOT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "initial_code": "print(2 + 2)",
+    "initial_language": "python"
+  }'
 ```
 
-Drop `--dry-run` and set `ANTHROPIC_API_KEY` to run against the real API.
+```json
+{
+  "id": "sbx_01jx...",
+  "state": "active",
+  "initial_result": {
+    "status": "success",
+    "stdout": "4\n",
+    "stderr": "",
+    "exit_code": 0,
+    "execution_time_ms": 38
+  }
+}
+```
 
-**4. Inspect**
+**Continue in the same sandbox** (state retained between calls)
 
 ```bash
-akernl inspect agent.krn
-#   name        researcher
-#   model       claude-sonnet-4-20250514
-#   framework   native
-#   image_type  unikernel
-#   tools       ['search', 'summarize']
-#   size        8,421,376 bytes
+curl -X POST http://localhost:8080/api/v1/sandboxes/sbx_01jx.../execute \
+  -H "x-api-key: $AKERNL_ROOT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"language": "python", "code": "x = 42\nprint(x ** 2)"}'
 ```
 
-## Supported formats
-
-**Native decorators** (recommended)
+## Python SDK
 
 ```python
-from akernl import agent, tool
+from akernl.sdk import AkernlClient
 
-@agent(name="my_agent", model="claude-sonnet-4-20250514", max_steps=5)
-class MyAgent:
-    input: str
+client = AkernlClient(base_url="http://localhost:8080", api_key="sk-...")
 
-    @tool
-    def lookup(self, query: str) -> str:
-        """Look up information."""
-        return f"result: {query}"
+with client.sandbox() as sb:
+    result = sb.execute("python", "print('hello')")
+    print(result.stdout)
+
+    sb.upload("/data.csv", b"a,b\n1,2\n")
+    sb.install("python", ["pandas"])
+    result = sb.execute("python", "import pandas as pd; print(pd.read_csv('/data.csv'))")
+    print(result.stdout)
 ```
 
-**LangChain**
+## API
 
-```python
-from langchain.tools import BaseTool
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | /api/v1/sandboxes | Create sandbox, optionally run initial code |
+| POST | /api/v1/sandboxes/:id/execute | Execute code in sandbox |
+| POST | /api/v1/sandboxes/:id/command | Run shell command |
+| PUT | /api/v1/sandboxes/:id/files | Upload file |
+| GET | /api/v1/sandboxes/:id/files | Download file |
 
-class SearchTool(BaseTool):
-    name = "search"
-    description = "Search the knowledge base"
+Full reference → [docs/api.md](docs/api.md)
 
-    def _run(self, query: str) -> str:
-        return f"results: {query}"
-```
+## Security modes
+
+| Mode | Network | Filesystem | Package install |
+|------|---------|------------|----------------|
+| `restricted` | blocked | read-only except /tmp | blocked |
+| `standard` | outbound only | writable workspace | allowed |
+| `full` | unrestricted | unrestricted | allowed |
+
+Default: `restricted`. Override per-sandbox with `AKERNL_ALLOW_MODE_OVERRIDE=true`.
+
+## Isolation levels
+
+| Level | Mechanism | Use when |
+|-------|-----------|----------|
+| `process` | chroot + cgroups | Low-trust internal code, max throughput |
+| `microvm` | Firecracker per tenant | Multi-tenant, strong isolation |
+| `dedicated` | One VM per execution | Highest security requirement |
+
+Set `AKERNL_ISOLATION_LEVEL`. Details → [docs/architecture.md](docs/architecture.md)
+
+## Configuration
 
 ```bash
-akernl compile langchain_agent.py   # detected automatically
+AKERNL_HOST=0.0.0.0
+AKERNL_PORT=8080
+AKERNL_AUTH_REQUIRED=true
+AKERNL_ROOT_KEY=<auto-generated if unset>
+AKERNL_SECURITY_MODE=restricted
+AKERNL_ISOLATION_LEVEL=process
+AKERNL_POOL_MIN_IDLE=2
+AKERNL_POOL_MAX_SIZE=20
+AKERNL_SANDBOX_TTL=900
+AKERNL_FIRECRACKER_PATH=/usr/local/bin/firecracker
 ```
 
-**LlamaIndex**
+Full reference → [docs/configuration.md](docs/configuration.md)
 
-```python
-from llama_index.core.tools import FunctionTool
+## Runtimes
 
-def search(query: str) -> str:
-    """Search documents."""
-    return f"found: {query}"
+| Runtime | `language` value |
+|---------|-----------------|
+| CPython 3.12 | `python` |
+| Node.js 20 | `nodejs` |
+| Bash | `shell` |
+| Go 1.22 | `go` |
 
-tools = [FunctionTool.from_defaults(fn=search)]
-```
+## Docs
 
-```bash
-akernl compile llama_agent.py   # detected automatically
-```
-
-## CLI reference
-
-```
-akernl compile <agent.py> [-o out.krn]
-  Compile agent to a .krn unikernel image.
-  Uses OPS/Nanos if available, otherwise produces a portable bundle.
-
-akernl run <image.krn> '<json>' [--dry-run] [--mode process|firecracker|auto]
-  Run an image. Firecracker if available, subprocess otherwise.
-  --dry-run: mock LLM calls, no API key needed.
-
-akernl deploy <image.krn> [--pool-size N] [--remote <url>]
-  Start a Firecracker VM pool. Default pool size: 4.
-
-akernl inspect <image.krn>
-  Show image metadata: name, model, tools, image type, size.
-
-akernl exec <agent.py> '<json>' [--dry-run]
-  Compile and run in one step. Cleans up the .krn after.
-```
-
-## Python API
-
-```python
-from akernl import compile, run, deploy
-
-img = compile("agent.py")
-result = run(img.path, {"query": "unikernels"}, dry_run=True)
-print(result["output"])
-
-pool = deploy("agent.krn", pool_size=8)
-result = pool.submit({"query": "Firecracker"}, dry_run=True)
-pool.shutdown()
-```
-
-## Architecture
-
-```
-agent.py
-  ↓  akernl/agent.py     AST parse — no code execution
-  ↓  akernl/bundle.py    pack manifest + source + runtime → .krn
-  ↓  akernl/compile.py   OPS → Nanos unikernel (or portable .krn fallback)
-  ↓  akernl/run.py       Firecracker boot (or subprocess fallback)
-  ↓  akernl/runtime.py   agent loop: LLM → tools → repeat  [stdlib only]
-  ↓  Anthropic API
-```
-
-```
-akernl/
-├── agent.py        AST parser — @agent/@tool, LangChain, LlamaIndex
-├── bundle.py       .krn format — pack/unpack/inspect
-├── compile.py      agent.py → .krn
-├── runtime.py      in-VM agent loop — stdlib only, zero deps
-├── run.py          Firecracker boot + HTTP dispatch
-├── pool.py         Firecracker VM pool
-├── deploy.py       local pool or unikernel.ai cloud
-├── cli.py          CLI entry point
-└── adapters/
-    ├── langchain.py
-    └── llama_index.py
-```
-
-## Benchmarks
-
-| Mode | Cold start | Warm (pool) | Image size |
-|---|---|---|---|
-| Firecracker (unikernel) | ~43ms | ~4ms | ~8MB |
-| Subprocess (portable) | ~180ms | — | ~3KB |
-
-*Single tool call, mock LLM, c6i.large.*
+- [API reference](docs/api.md)
+- [Configuration](docs/configuration.md)
+- [Architecture](docs/architecture.md)
+- [SDK reference](docs/sdk.md)
+- [Contributing](CONTRIBUTING.md)
 
 ## Development
 
 ```bash
 git clone https://github.com/cottus-ai/akernl && cd akernl
 uv venv && source .venv/bin/activate
-uv pip install -e ".[dev]"
+uv pip install -e ".[dev,serve]"
 pytest tests/ -v
 ```
 

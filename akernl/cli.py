@@ -146,7 +146,7 @@ flags:
   --dry-run                     mock LLM calls, no API key needed
   --mode process|firecracker    force execution mode (default: auto)
   --pool-size N                 VMs in pool (default: 4)
-  --remote <url>                deploy to unikernel.ai cloud (v0.2)
+  --remote <url>                deploy to remote akernl server
   --adapter langchain|llama_index  force adapter detection (default: auto)
 """
 
